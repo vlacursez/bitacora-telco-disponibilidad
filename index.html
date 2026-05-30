@@ -613,38 +613,41 @@ async function saveRecord(){
     toast('Por favor complete todos los campos obligatorios (*)','error');return;
   }
   const record={
-    id:editingId||Date.now(),
-    fecha,tipoEvento,tipoFalla,diagnostico,
-    proveedor:document.getElementById('f-proveedor').value.trim(),
-    casoProveedor:document.getElementById('f-caso-proveedor').value.trim(),
-    casoAranda:document.getElementById('f-caso-aranda').value.trim(),
-    gestion,estado,
-    archivos:attachedFiles.map(f=>({name:f.name,size:f.size,type:f.type})),
-    createdAt:editingId?records.find(r=>r.id===editingId)?.createdAt:new Date().toISOString()
+    id: editingId || Date.now(),
+    fecha, tipoEvento, tipoFalla, diagnostico,
+    proveedor: document.getElementById('f-proveedor').value.trim(),
+    casoProveedor: document.getElementById('f-caso-proveedor').value.trim(),
+    casoAranda: document.getElementById('f-caso-aranda').value.trim(),
+    gestion, estado,
+    archivos: attachedFiles.map(f=>({name:f.name,size:f.size,type:f.type})),
+    createdAt: editingId ? (records.find(r=>String(r.id)===String(editingId))?.createdAt || new Date().toISOString()) : new Date().toISOString()
   };
 
-  // Actualizar array local optimistamente
-  if(editingId){
-    const idx=records.findIndex(r=>String(r.id)===String(editingId));
-    if(idx>=0) records[idx]=record; else records.push(record);
-    editingId=null;
-  } else {
-    records.push(record);
-  }
-
-  clearForm();
-  showView('records');
-  refreshAll();
-
-  // Guardar en Google Sheets
+  // Bloquear autosync mientras guardamos
+  isSyncing = true;
   showSyncBar('Guardando en Google Sheets...','loading');
+
   try {
-    await apiSave(record);
-    showSyncBar('Registro guardado en Google Sheets ✓','success');
-    toast('Registro guardado exitosamente','success');
+    // 1. Guardar en Sheets PRIMERO
+    const res = await apiSave(record);
+    if(res.error) throw new Error(res.error);
+
+    // 2. Recargar desde Sheets para tener el estado real
+    records = await apiGet();
+
+    showSyncBar('Registro guardado correctamente ✓','success');
+    toast(editingId ? 'Registro actualizado correctamente' : 'Registro guardado exitosamente','success');
+    editingId = null;
+    clearForm();
+    refreshAll();
+    showView('records');
+
   } catch(e) {
+    console.error('Error guardando:', e);
     showSyncBar('Error al guardar en Google Sheets','error');
-    toast('Error de conexión — revisa tu internet','error');
+    toast('No se pudo guardar — verifica tu conexión','error');
+  } finally {
+    isSyncing = false;
   }
 }
 
@@ -808,16 +811,19 @@ async function syncNow(){
 // ===== RECORD ACTIONS =====
 async function deleteRecord(id){
   if(!confirm('¿Eliminar este registro?'))return;
-  records=records.filter(r=>String(r.id)!==String(id));
-  refreshAll();
+  isSyncing = true;
   showSyncBar('Eliminando registro...','loading');
   try {
     await apiDelete(id);
+    records = await apiGet();
+    refreshAll();
     showSyncBar('Registro eliminado','success');
     toast('Registro eliminado','info');
   } catch(e) {
-    showSyncBar('Error al eliminar en Google Sheets','error');
+    showSyncBar('Error al eliminar','error');
     toast('Error de conexión','error');
+  } finally {
+    isSyncing = false;
   }
 }
 
