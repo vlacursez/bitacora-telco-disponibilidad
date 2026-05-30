@@ -486,26 +486,28 @@ let isSyncing = false;
 // ===== GOOGLE SHEETS API =====
 const API_URL = 'https://script.google.com/macros/s/AKfycbwq1kISXGcWMCbaX5E-xXJD6XNYSDreYOO3xB3xU8JntAVM_uJJl7MfDmScgN2Hg3AaOg/exec';
 
+// Todo va como GET para evitar bloqueos CORS de Apps Script
+async function apiCall(params) {
+  const qs = Object.entries(params)
+    .map(([k,v]) => `${encodeURIComponent(k)}=${encodeURIComponent(typeof v === 'object' ? JSON.stringify(v) : v)}`)
+    .join('&');
+  const res = await fetch(`${API_URL}?${qs}`, { redirect: 'follow' });
+  const text = await res.text();
+  try { return JSON.parse(text); }
+  catch(e) { console.error('Respuesta no JSON:', text); throw new Error('Respuesta inválida del servidor'); }
+}
+
 async function apiGet() {
-  const res = await fetch(API_URL + '?action=getAll');
-  const data = await res.json();
+  const data = await apiCall({ action: 'getAll' });
   return data.records || [];
 }
 
 async function apiSave(record) {
-  const res = await fetch(API_URL, {
-    method: 'POST',
-    body: JSON.stringify({ action: 'save', record })
-  });
-  return await res.json();
+  return await apiCall({ action: 'save', record });
 }
 
 async function apiDelete(id) {
-  const res = await fetch(API_URL, {
-    method: 'POST',
-    body: JSON.stringify({ action: 'delete', id })
-  });
-  return await res.json();
+  return await apiCall({ action: 'delete', id });
 }
 
 function showSyncBar(msg, type='loading') {
