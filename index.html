@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Bitácora Telco · Disponibilidad TI</title>
+<title>TechOps · Gestión de Incidentes TI</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -184,7 +184,7 @@ table.dataTable tbody tr:hover td{background:var(--accent-light)!important}
 <div class="app-layout">
   <!-- SIDEBAR -->
   <nav class="sidebar">
-    <div class="logo">BT</div>
+    <div class="logo">TI</div>
     <button class="nav-btn active" onclick="showView('dashboard')" id="nav-dashboard" title="">
       <i class="fa-solid fa-chart-pie"></i>
       <span class="tip">Dashboard</span>
@@ -209,12 +209,13 @@ table.dataTable tbody tr:hover td{background:var(--accent-light)!important}
     <!-- TOPBAR -->
     <header class="topbar">
       <div>
-        <div class="topbar-title">Bitácora Telco · Disponibilidad TI</div>
+        <div class="topbar-title">TechOps · Gestión de Incidentes</div>
         <div class="topbar-sub" id="topbar-date"></div>
       </div>
       <div class="topbar-spacer"></div>
       <span class="pill pill-blue" id="topbar-counter"><i class="fa-solid fa-bolt"></i> <span id="total-counter">0</span> incidentes</span>
       <span class="pill pill-green" id="topbar-open"><i class="fa-solid fa-circle-dot"></i> <span id="open-counter">0</span> abiertos</span>
+      <button class="theme-btn" onclick="syncNow()" title="Sincronizar con Google Sheets"><i class="fa-solid fa-rotate"></i></button>
     </header>
 
     <!-- ====== DASHBOARD VIEW ====== -->
@@ -480,31 +481,84 @@ let attachedFiles = [];
 let dtInstance = null;
 let charts = {};
 let editingId = null;
+let isSyncing = false;
 
-// ===== STORAGE =====
-function saveToStorage(){
-  try{localStorage.setItem('ti_records',JSON.stringify(records));}
-  catch(e){console.error('Error guardando:',e);}
+// ===== GOOGLE SHEETS API =====
+const API_URL = 'https://script.google.com/macros/s/AKfycbwq1kISXGcWMCbaX5E-xXJD6XNYSDreYOO3xB3xU8JntAVM_uJJl7MfDmScgN2Hg3AaOg/exec';
+
+async function apiGet() {
+  const res = await fetch(API_URL + '?action=getAll');
+  const data = await res.json();
+  return data.records || [];
 }
-function loadFromStorage(){
-  try{
-    const d=localStorage.getItem('ti_records');
-    records=d?JSON.parse(d):[];
-    if(!Array.isArray(records))records=[];
-  }catch(e){records=[];}
+
+async function apiSave(record) {
+  const res = await fetch(API_URL, {
+    method: 'POST',
+    body: JSON.stringify({ action: 'save', record })
+  });
+  return await res.json();
+}
+
+async function apiDelete(id) {
+  const res = await fetch(API_URL, {
+    method: 'POST',
+    body: JSON.stringify({ action: 'delete', id })
+  });
+  return await res.json();
+}
+
+function showSyncBar(msg, type='loading') {
+  let bar = document.getElementById('sync-bar');
+  if (!bar) {
+    bar = document.createElement('div');
+    bar.id = 'sync-bar';
+    bar.style.cssText = 'position:fixed;top:0;left:64px;right:0;z-index:9999;padding:8px 20px;font-size:13px;font-weight:600;display:flex;align-items:center;gap:10px;transition:all .3s';
+    document.body.appendChild(bar);
+  }
+  const colors = {
+    loading: 'background:#0057ff;color:#fff',
+    success: 'background:#00c9a7;color:#fff',
+    error: 'background:#ff3b5c;color:#fff'
+  };
+  bar.style.cssText += ';' + colors[type];
+  const icons = { loading: '⟳', success: '✓', error: '✕' };
+  bar.innerHTML = `<span style="font-size:16px">${icons[type]}</span> ${msg}`;
+  bar.style.display = 'flex';
+  if (type !== 'loading') setTimeout(() => { bar.style.display = 'none'; }, 3000);
+}
+
+async function loadFromSheets() {
+  showSyncBar('Sincronizando con Google Sheets...', 'loading');
+  try {
+    records = await apiGet();
+    showSyncBar('Datos sincronizados correctamente', 'success');
+  } catch(e) {
+    showSyncBar('Error de conexión con Google Sheets', 'error');
+    records = [];
+  }
 }
 
 // ===== INIT =====
-document.addEventListener('DOMContentLoaded',()=>{
-  loadFromStorage();
+document.addEventListener('DOMContentLoaded', () => {
   setCurrentDateTime();
   updateTopbarDate();
-  $(document).ready(function(){
+  $(document).ready(async function() {
     initDataTable();
+    await loadFromSheets();
     refreshAll();
   });
   initDragDrop();
-  setInterval(updateTopbarDate,60000);
+  setInterval(updateTopbarDate, 60000);
+  // Auto-sync cada 30 segundos
+  setInterval(async () => {
+    if (isSyncing) return;
+    isSyncing = true;
+    try {
+      records = await apiGet();
+      refreshAll();
+    } catch(e) {} finally { isSyncing = false; }
+  }, 30000);
 });
 
 function setCurrentDateTime(){
@@ -546,7 +600,7 @@ function toggleTheme(){
 })();
 
 // ===== FORM =====
-function saveRecord(){
+async function saveRecord(){
   const fecha=document.getElementById('f-fecha').value;
   const tipoEvento=document.getElementById('f-tipo-evento').value;
   const tipoFalla=document.getElementById('f-tipo-falla').value;
@@ -566,19 +620,30 @@ function saveRecord(){
     archivos:attachedFiles.map(f=>({name:f.name,size:f.size,type:f.type})),
     createdAt:editingId?records.find(r=>r.id===editingId)?.createdAt:new Date().toISOString()
   };
+
+  // Actualizar array local optimistamente
   if(editingId){
-    const idx=records.findIndex(r=>r.id===editingId);
-    records[idx]=record;
+    const idx=records.findIndex(r=>String(r.id)===String(editingId));
+    if(idx>=0) records[idx]=record; else records.push(record);
     editingId=null;
-    toast('Registro actualizado correctamente','info');
   } else {
     records.push(record);
-    toast('Registro guardado exitosamente','success');
   }
-  saveToStorage();
+
   clearForm();
   showView('records');
   refreshAll();
+
+  // Guardar en Google Sheets
+  showSyncBar('Guardando en Google Sheets...','loading');
+  try {
+    await apiSave(record);
+    showSyncBar('Registro guardado en Google Sheets ✓','success');
+    toast('Registro guardado exitosamente','success');
+  } catch(e) {
+    showSyncBar('Error al guardar en Google Sheets','error');
+    toast('Error de conexión — revisa tu internet','error');
+  }
 }
 
 function clearForm(){
@@ -710,19 +775,48 @@ function badgeStyle(estado){
 }
 function applyBadgeColors(){}
 
-function clearAllData(){
+async function clearAllData(){
   if(!confirm('¿Eliminar TODOS los registros? Esta acción no se puede deshacer.'))return;
+  const ids=[...records.map(r=>r.id)];
   records=[];
-  localStorage.removeItem('ti_records');
   refreshAll();
-  toast('Todos los registros eliminados','info');
+  showSyncBar('Eliminando todos los registros...','loading');
+  try {
+    for(const id of ids){ await apiDelete(id); }
+    showSyncBar('Todos los registros eliminados','success');
+    toast('Todos los registros eliminados','info');
+  } catch(e) {
+    showSyncBar('Error al eliminar en Google Sheets','error');
+  }
+}
+
+async function syncNow(){
+  showSyncBar('Sincronizando...','loading');
+  try {
+    records = await apiGet();
+    refreshAll();
+    showSyncBar('Sincronización completada','success');
+    toast('Datos actualizados desde Google Sheets','info');
+  } catch(e) {
+    showSyncBar('Error de conexión','error');
+    toast('No se pudo conectar con Google Sheets','error');
+  }
 }
 
 // ===== RECORD ACTIONS =====
-function deleteRecord(id){
+async function deleteRecord(id){
   if(!confirm('¿Eliminar este registro?'))return;
   records=records.filter(r=>String(r.id)!==String(id));
-  saveToStorage();refreshAll();toast('Registro eliminado','info');
+  refreshAll();
+  showSyncBar('Eliminando registro...','loading');
+  try {
+    await apiDelete(id);
+    showSyncBar('Registro eliminado','success');
+    toast('Registro eliminado','info');
+  } catch(e) {
+    showSyncBar('Error al eliminar en Google Sheets','error');
+    toast('Error de conexión','error');
+  }
 }
 
 function editRecord(id){
