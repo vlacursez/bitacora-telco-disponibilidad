@@ -484,17 +484,24 @@ let editingId = null;
 let isSyncing = false;
 
 // ===== GOOGLE SHEETS API =====
-const API_URL = 'https://script.google.com/macros/s/AKfycbwq1kISXGcWMCbaX5E-xXJD6XNYSDreYOO3xB3xU8JntAVM_uJJl7MfDmScgN2Hg3AaOg/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbxcOTZLVjSspPgUI1clRnxrnsqQ4BHXpvs4ZvQwSKbfwH9OTdPBZVAq3_ukz1BJ3iN-Gg/exec';
 
 // Todo va como GET para evitar bloqueos CORS de Apps Script
 async function apiCall(params) {
   const qs = Object.entries(params)
     .map(([k,v]) => `${encodeURIComponent(k)}=${encodeURIComponent(typeof v === 'object' ? JSON.stringify(v) : v)}`)
     .join('&');
-  const res = await fetch(`${API_URL}?${qs}`, { redirect: 'follow' });
+  const url = `${API_URL}?${qs}`;
+  // Apps Script requiere seguir redirecciones manualmente
+  const res = await fetch(url, {
+    method: 'GET',
+    redirect: 'follow',
+    mode: 'cors',
+    headers: { 'Content-Type': 'text/plain' }
+  });
   const text = await res.text();
   try { return JSON.parse(text); }
-  catch(e) { console.error('Respuesta no JSON:', text); throw new Error('Respuesta inválida del servidor'); }
+  catch(e) { console.error('Respuesta no JSON:', text); throw new Error('Respuesta inválida: ' + text.substring(0,100)); }
 }
 
 async function apiGet() {
