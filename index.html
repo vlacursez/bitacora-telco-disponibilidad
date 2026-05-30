@@ -1,0 +1,915 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bitácora Telco · Disponibilidad TI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.datatables.net/1.13.8/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+<style>
+:root {
+  --bg: #f0f2f7;
+  --surface: #ffffff;
+  --surface2: #f7f8fc;
+  --border: #e2e6f0;
+  --text: #0f1623;
+  --text-muted: #6b7280;
+  --accent: #0057ff;
+  --accent-light: #e8efff;
+  --accent2: #00c9a7;
+  --accent2-light: #e6faf7;
+  --danger: #ff3b5c;
+  --danger-light: #fff0f3;
+  --warning: #ff9500;
+  --warning-light: #fff7e6;
+  --success: #00c9a7;
+  --success-light: #e6faf7;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+  --shadow: 0 4px 16px rgba(0,0,0,.08);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,.12);
+  --radius: 12px;
+  --radius-sm: 8px;
+  --radius-lg: 20px;
+  --sidebar-w: 64px;
+}
+[data-theme="dark"] {
+  --bg: #0b0f1a;
+  --surface: #141929;
+  --surface2: #1c2236;
+  --border: #252d42;
+  --text: #e8ecf4;
+  --text-muted: #8892a4;
+  --accent-light: #0f1f4a;
+  --accent2-light: #0a2a24;
+  --danger-light: #2a0f16;
+  --warning-light: #2a1e0a;
+  --success-light: #0a2a24;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,.3);
+  --shadow: 0 4px 16px rgba(0,0,0,.4);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,.5);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;transition:background .3s,color .3s}
+/* LAYOUT */
+.app-layout{display:flex;min-height:100vh}
+/* SIDEBAR */
+.sidebar{width:var(--sidebar-w);background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;padding:16px 0;gap:8px;position:fixed;top:0;left:0;height:100vh;z-index:100;transition:background .3s,border-color .3s}
+.sidebar .logo{width:36px;height:36px;background:var(--accent);border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;font-weight:700;letter-spacing:-1px;margin-bottom:16px}
+.nav-btn{width:40px;height:40px;border-radius:10px;border:none;background:transparent;color:var(--text-muted);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s;font-size:15px;position:relative}
+.nav-btn:hover,.nav-btn.active{background:var(--accent-light);color:var(--accent)}
+.nav-btn .tip{position:absolute;left:48px;background:var(--text);color:var(--bg);padding:4px 10px;border-radius:6px;font-size:12px;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .2s;font-family:'DM Mono',monospace}
+.nav-btn:hover .tip{opacity:1}
+.sidebar-spacer{flex:1}
+/* MAIN */
+.main{margin-left:var(--sidebar-w);flex:1;display:flex;flex-direction:column}
+/* TOPBAR */
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 24px;height:56px;display:flex;align-items:center;gap:16px;position:sticky;top:0;z-index:90;transition:background .3s}
+.topbar-title{font-weight:700;font-size:16px;letter-spacing:-.3px}
+.topbar-sub{font-size:12px;color:var(--text-muted);font-family:'DM Mono',monospace}
+.topbar-spacer{flex:1}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:100px;font-size:12px;font-weight:600}
+.pill-blue{background:var(--accent-light);color:var(--accent)}
+.pill-green{background:var(--accent2-light);color:var(--accent2)}
+.pill-red{background:var(--danger-light);color:var(--danger)}
+.pill-orange{background:var(--warning-light);color:var(--warning)}
+.pill-gray{background:var(--surface2);color:var(--text-muted)}
+/* VIEWS */
+.view{display:none;padding:24px;animation:fadeIn .3s ease}
+.view.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+/* CARDS */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-sm);transition:background .3s,border-color .3s}
+.card-header-custom{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.card-header-custom .icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px}
+.card-header-custom .title{font-weight:700;font-size:15px}
+.card-header-custom .sub{font-size:12px;color:var(--text-muted)}
+.card-body-custom{padding:20px}
+/* KPI CARDS */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px}
+.kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;display:flex;align-items:flex-start;gap:14px;box-shadow:var(--shadow-sm);transition:all .2s}
+.kpi-card:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
+.kpi-icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.kpi-label{font-size:12px;color:var(--text-muted);font-weight:500;margin-bottom:4px}
+.kpi-value{font-size:28px;font-weight:700;letter-spacing:-1px;line-height:1}
+.kpi-trend{font-size:11px;font-weight:600;margin-top:4px}
+/* CHART CARDS */
+.chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px}
+.chart-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:24px}
+.chart-wrap{position:relative;height:220px}
+/* FORM */
+.form-label{font-size:13px;font-weight:600;color:var(--text);margin-bottom:6px}
+.form-control,.form-select{background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;padding:10px 14px;transition:all .2s}
+.form-control:focus,.form-select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,87,255,.12);background:var(--surface);outline:none}
+.form-control::placeholder{color:var(--text-muted)}
+.form-select option{background:var(--surface);color:var(--text)}
+textarea.form-control{resize:vertical;min-height:100px}
+/* BUTTONS */
+.btn-primary-custom{background:var(--accent);color:#fff;border:none;border-radius:var(--radius-sm);padding:10px 20px;font-family:'DM Sans',sans-serif;font-weight:600;font-size:14px;cursor:pointer;display:inline-flex;align-items:center;gap:8px;transition:all .2s}
+.btn-primary-custom:hover{background:#0044cc;transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,87,255,.3)}
+.btn-outline-custom{background:transparent;color:var(--text);border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:10px 20px;font-family:'DM Sans',sans-serif;font-weight:600;font-size:14px;cursor:pointer;display:inline-flex;align-items:center;gap:8px;transition:all .2s}
+.btn-outline-custom:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-light)}
+.btn-success-custom{background:var(--accent2);color:#fff;border:none;border-radius:var(--radius-sm);padding:10px 20px;font-family:'DM Sans',sans-serif;font-weight:600;font-size:14px;cursor:pointer;display:inline-flex;align-items:center;gap:8px;transition:all .2s}
+.btn-success-custom:hover{background:#00a88a;transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,201,167,.3)}
+.btn-danger-custom{background:var(--danger);color:#fff;border:none;border-radius:var(--radius-sm);padding:10px 20px;font-family:'DM Sans',sans-serif;font-weight:600;font-size:14px;cursor:pointer;display:inline-flex;align-items:center;gap:8px;transition:all .2s}
+.btn-danger-custom:hover{opacity:.85}
+/* FILE UPLOAD */
+.file-drop{border:2px dashed var(--border);border-radius:var(--radius);padding:32px;text-align:center;cursor:pointer;transition:all .2s;background:var(--surface2)}
+.file-drop:hover,.file-drop.drag-over{border-color:var(--accent);background:var(--accent-light)}
+.file-drop i{font-size:28px;color:var(--text-muted);margin-bottom:8px}
+.file-drop .drop-title{font-weight:600;font-size:14px;margin-bottom:4px}
+.file-drop .drop-sub{font-size:12px;color:var(--text-muted)}
+.file-preview-grid{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
+.file-preview-item{position:relative;border-radius:8px;overflow:hidden;border:1px solid var(--border);background:var(--surface)}
+.file-preview-item img{width:80px;height:80px;object-fit:cover;display:block}
+.file-preview-item .file-info{padding:8px;font-size:11px;max-width:120px;overflow:hidden}
+.file-preview-item .file-name{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.file-preview-item .file-size{color:var(--text-muted)}
+.file-preview-item .remove-file{position:absolute;top:4px;right:4px;width:18px;height:18px;background:var(--danger);color:#fff;border:none;border-radius:50%;font-size:9px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+/* TABLE */
+.table-container{overflow-x:auto}
+table.dataTable{color:var(--text)!important;border-color:var(--border)!important}
+table.dataTable thead th{background:var(--surface2)!important;color:var(--text-muted)!important;font-size:12px!important;font-weight:700!important;text-transform:uppercase!important;letter-spacing:.5px!important;border-bottom:1px solid var(--border)!important;padding:12px 16px!important}
+table.dataTable tbody td{padding:12px 16px!important;border-bottom:1px solid var(--border)!important;vertical-align:middle!important;font-size:13px!important}
+table.dataTable tbody tr:hover td{background:var(--accent-light)!important}
+.dataTables_wrapper .dataTables_filter input{background:var(--surface2)!important;border:1.5px solid var(--border)!important;border-radius:8px!important;color:var(--text)!important;padding:6px 12px!important;font-family:'DM Sans',sans-serif}
+.dataTables_wrapper .dataTables_length select{background:var(--surface2)!important;border:1.5px solid var(--border)!important;border-radius:8px!important;color:var(--text)!important}
+.dataTables_wrapper .dataTables_paginate .paginate_button.current{background:var(--accent)!important;border-color:var(--accent)!important;color:#fff!important;border-radius:6px!important}
+.dataTables_wrapper .dataTables_paginate .paginate_button:hover{background:var(--accent-light)!important;border-color:var(--accent-light)!important;color:var(--accent)!important}
+.dataTables_wrapper .dataTables_info,.dataTables_wrapper .dataTables_filter label,.dataTables_wrapper .dataTables_length label{color:var(--text-muted)!important;font-size:12px!important}
+/* TOAST */
+.toast-container{position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:8px}
+.toast-item{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px 18px;box-shadow:var(--shadow-lg);display:flex;align-items:center;gap:12px;font-size:13px;font-weight:500;animation:slideUp .3s ease;min-width:280px;max-width:360px}
+.toast-item.success{border-left:3px solid var(--accent2)}
+.toast-item.error{border-left:3px solid var(--danger)}
+.toast-item.info{border-left:3px solid var(--accent)}
+@keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+/* FILTERS */
+.filter-bar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+.filter-bar .form-select,.filter-bar .form-control{font-size:13px;padding:8px 12px;max-width:200px}
+/* SECTION TITLE */
+.section-title{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text-muted);margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.section-title::after{content:'';flex:1;height:1px;background:var(--border)}
+/* BADGE STATUS */
+.badge-status{padding:4px 10px;border-radius:100px;font-size:11px;font-weight:700;font-family:'DM Mono',monospace}
+/* DARK TOGGLE */
+.theme-btn{width:40px;height:40px;border-radius:10px;border:1.5px solid var(--border);background:var(--surface2);color:var(--text-muted);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s;font-size:14px}
+.theme-btn:hover{border-color:var(--accent);color:var(--accent)}
+/* RESPONSIVE */
+@media(max-width:768px){
+  .chart-grid,.chart-grid-3{grid-template-columns:1fr}
+  .kpi-grid{grid-template-columns:1fr 1fr}
+  .filter-bar .form-select,.filter-bar .form-control{max-width:100%}
+  .topbar{padding:0 12px}
+  .view{padding:12px}
+}
+/* EMPTY STATE */
+.empty-state{text-align:center;padding:48px 20px;color:var(--text-muted)}
+.empty-state i{font-size:40px;margin-bottom:12px;opacity:.3}
+.empty-state p{font-size:14px}
+/* ACTION ROW */
+.action-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+/* DIVIDER */
+.form-divider{height:1px;background:var(--border);margin:20px 0}
+/* scrollbar */
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:99px}
+::-webkit-scrollbar-thumb:hover{background:var(--text-muted)}
+</style>
+</head>
+<body>
+<div class="app-layout">
+  <!-- SIDEBAR -->
+  <nav class="sidebar">
+    <div class="logo">BT</div>
+    <button class="nav-btn active" onclick="showView('dashboard')" id="nav-dashboard" title="">
+      <i class="fa-solid fa-chart-pie"></i>
+      <span class="tip">Dashboard</span>
+    </button>
+    <button class="nav-btn" onclick="showView('form')" id="nav-form">
+      <i class="fa-solid fa-circle-plus"></i>
+      <span class="tip">Nuevo Registro</span>
+    </button>
+    <button class="nav-btn" onclick="showView('records')" id="nav-records">
+      <i class="fa-solid fa-table-list"></i>
+      <span class="tip">Historial</span>
+    </button>
+    <div class="sidebar-spacer"></div>
+    <button class="nav-btn" onclick="toggleTheme()" title="Modo oscuro">
+      <i class="fa-solid fa-moon" id="theme-icon"></i>
+      <span class="tip">Tema</span>
+    </button>
+  </nav>
+
+  <!-- MAIN -->
+  <main class="main">
+    <!-- TOPBAR -->
+    <header class="topbar">
+      <div>
+        <div class="topbar-title">Bitácora Telco · Disponibilidad TI</div>
+        <div class="topbar-sub" id="topbar-date"></div>
+      </div>
+      <div class="topbar-spacer"></div>
+      <span class="pill pill-blue" id="topbar-counter"><i class="fa-solid fa-bolt"></i> <span id="total-counter">0</span> incidentes</span>
+      <span class="pill pill-green" id="topbar-open"><i class="fa-solid fa-circle-dot"></i> <span id="open-counter">0</span> abiertos</span>
+    </header>
+
+    <!-- ====== DASHBOARD VIEW ====== -->
+    <div class="view active" id="view-dashboard">
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-icon" style="background:var(--accent-light);color:var(--accent)"><i class="fa-solid fa-ticket"></i></div>
+          <div>
+            <div class="kpi-label">Total Incidentes</div>
+            <div class="kpi-value" id="kpi-total">0</div>
+            <div class="kpi-trend" style="color:var(--accent)">Este mes</div>
+          </div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon" style="background:var(--danger-light);color:var(--danger)"><i class="fa-solid fa-triangle-exclamation"></i></div>
+          <div>
+            <div class="kpi-label">Casos Abiertos</div>
+            <div class="kpi-value" id="kpi-open">0</div>
+            <div class="kpi-trend" style="color:var(--danger)">Requieren atención</div>
+          </div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon" style="background:var(--success-light);color:var(--success)"><i class="fa-solid fa-circle-check"></i></div>
+          <div>
+            <div class="kpi-label">Casos Cerrados</div>
+            <div class="kpi-value" id="kpi-closed">0</div>
+            <div class="kpi-trend" style="color:var(--success)">Resueltos</div>
+          </div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon" style="background:var(--warning-light);color:var(--warning)"><i class="fa-solid fa-clock"></i></div>
+          <div>
+            <div class="kpi-label">Tiempo Prom. Atención</div>
+            <div class="kpi-value" id="kpi-avg">—</div>
+            <div class="kpi-trend" style="color:var(--warning)">Días promedio</div>
+          </div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon" style="background:#f0e6ff;color:#7c3aed"><i class="fa-solid fa-arrow-up-right-dots"></i></div>
+          <div>
+            <div class="kpi-label">Escalados</div>
+            <div class="kpi-value" id="kpi-escalated">0</div>
+            <div class="kpi-trend" style="color:#7c3aed">En escalamiento</div>
+          </div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon" style="background:#fff3e0;color:#e65100"><i class="fa-solid fa-building"></i></div>
+          <div>
+            <div class="kpi-label">Proveedores</div>
+            <div class="kpi-value" id="kpi-providers">0</div>
+            <div class="kpi-trend" style="color:#e65100">Involucrados</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="chart-grid">
+        <div class="card">
+          <div class="card-header-custom">
+            <div class="icon" style="background:var(--accent-light);color:var(--accent)"><i class="fa-solid fa-chart-column"></i></div>
+            <div><div class="title">Por Tipo de Falla</div><div class="sub">Distribución de incidentes</div></div>
+          </div>
+          <div class="card-body-custom"><div class="chart-wrap"><canvas id="chartFallas"></canvas></div></div>
+        </div>
+        <div class="card">
+          <div class="card-header-custom">
+            <div class="icon" style="background:var(--accent2-light);color:var(--accent2)"><i class="fa-solid fa-chart-pie"></i></div>
+            <div><div class="title">Estado de Casos</div><div class="sub">Abiertos vs cerrados</div></div>
+          </div>
+          <div class="card-body-custom"><div class="chart-wrap"><canvas id="chartEstado"></canvas></div></div>
+        </div>
+      </div>
+
+      <div class="chart-grid">
+        <div class="card">
+          <div class="card-header-custom">
+            <div class="icon" style="background:#f0e6ff;color:#7c3aed"><i class="fa-solid fa-chart-line"></i></div>
+            <div><div class="title">Tendencia Mensual</div><div class="sub">Incidentes por mes</div></div>
+          </div>
+          <div class="card-body-custom"><div class="chart-wrap"><canvas id="chartTendencia"></canvas></div></div>
+        </div>
+        <div class="card">
+          <div class="card-header-custom">
+            <div class="icon" style="background:#fff3e0;color:#e65100"><i class="fa-solid fa-building"></i></div>
+            <div><div class="title">Por Proveedor</div><div class="sub">Top proveedores</div></div>
+          </div>
+          <div class="card-body-custom"><div class="chart-wrap"><canvas id="chartProveedor"></canvas></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====== FORM VIEW ====== -->
+    <div class="view" id="view-form">
+      <div class="card">
+        <div class="card-header-custom">
+          <div class="icon" style="background:var(--accent-light);color:var(--accent)"><i class="fa-solid fa-circle-plus"></i></div>
+          <div><div class="title">Nuevo Registro de Incidente</div><div class="sub">Complete todos los campos requeridos</div></div>
+        </div>
+        <div class="card-body-custom">
+          <div class="section-title"><i class="fa-solid fa-calendar"></i> Información General</div>
+          <div class="row g-3 mb-3">
+            <div class="col-md-4">
+              <label class="form-label">Fecha y Hora del Evento *</label>
+              <input type="datetime-local" class="form-control" id="f-fecha" required>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Tipo de Evento *</label>
+              <select class="form-select" id="f-tipo-evento" required>
+                <option value="">Seleccionar...</option>
+                <option>Incidente</option><option>Requerimiento</option><option>Mantenimiento</option>
+                <option>Preventivo</option><option>Correctivo</option><option>Cambio</option><option>Emergencia</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Tipo de Falla *</label>
+              <select class="form-select" id="f-tipo-falla" required>
+                <option value="">Seleccionar...</option>
+                <option>Red LAN</option><option>WIFI</option><option>MPLS</option><option>SD-WAN</option>
+                <option>Firewall</option><option>Internet</option><option>VPN</option><option>Servidor</option>
+                <option>Aplicación</option><option>Hardware</option><option>Energía</option>
+                <option>Telefonía</option><option>Seguridad</option><option>Otro</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-divider"></div>
+          <div class="section-title"><i class="fa-solid fa-magnifying-glass"></i> Diagnóstico</div>
+          <div class="row g-3 mb-3">
+            <div class="col-12">
+              <label class="form-label">Diagnóstico del Evento *</label>
+              <textarea class="form-control" id="f-diagnostico" rows="3" placeholder="Describa el diagnóstico técnico del evento..." required></textarea>
+            </div>
+          </div>
+
+          <div class="form-divider"></div>
+          <div class="section-title"><i class="fa-solid fa-building"></i> Información del Proveedor</div>
+          <div class="row g-3 mb-3">
+            <div class="col-md-4">
+              <label class="form-label">Nombre del Proveedor</label>
+              <input type="text" class="form-control" id="f-proveedor" placeholder="Ej. Claro, Tigo, ETB...">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">N° Caso Proveedor</label>
+              <input type="text" class="form-control" id="f-caso-proveedor" placeholder="Ej. INC-2024-00123">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">N° Caso Aranda (Mesa de Ayuda)</label>
+              <input type="text" class="form-control" id="f-caso-aranda" placeholder="Ej. ARN-2024-00456">
+            </div>
+          </div>
+
+          <div class="form-divider"></div>
+          <div class="section-title"><i class="fa-solid fa-gears"></i> Gestión y Resolución</div>
+          <div class="row g-3 mb-3">
+            <div class="col-12">
+              <label class="form-label">Gestión y Proceso Realizado *</label>
+              <textarea class="form-control" id="f-gestion" rows="4" placeholder="Detalle paso a paso la gestión realizada, acciones tomadas, soluciones aplicadas..." required></textarea>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Estado del Caso *</label>
+              <select class="form-select" id="f-estado" required>
+                <option value="">Seleccionar...</option>
+                <option>Abierto</option><option>En proceso</option><option>Escalado</option>
+                <option>Pendiente proveedor</option><option>Solucionado</option><option>Cerrado</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-divider"></div>
+          <div class="section-title"><i class="fa-solid fa-paperclip"></i> Documentación Adjunta</div>
+          <div class="file-drop" id="file-drop-zone" onclick="document.getElementById('file-input').click()">
+            <i class="fa-solid fa-cloud-arrow-up"></i>
+            <div class="drop-title">Arrastra archivos aquí o haz clic para seleccionar</div>
+            <div class="drop-sub">Imágenes, PDF, Word — Máx. 10MB por archivo</div>
+            <input type="file" id="file-input" multiple accept="image/*,.pdf,.doc,.docx" style="display:none" onchange="handleFiles(this.files)">
+          </div>
+          <div class="file-preview-grid" id="file-preview"></div>
+
+          <div class="form-divider"></div>
+          <div class="action-row">
+            <button class="btn-primary-custom" onclick="saveRecord()"><i class="fa-solid fa-floppy-disk"></i> Guardar Registro</button>
+            <button class="btn-outline-custom" onclick="clearForm()"><i class="fa-solid fa-eraser"></i> Limpiar Formulario</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====== RECORDS VIEW ====== -->
+    <div class="view" id="view-records">
+      <div class="card mb-3">
+        <div class="card-body-custom">
+          <div class="action-row mb-3">
+            <button class="btn-success-custom" onclick="exportExcel()"><i class="fa-solid fa-file-excel"></i> Exportar Excel</button>
+            <button class="btn-outline-custom" onclick="exportCSV()"><i class="fa-solid fa-file-csv"></i> Exportar CSV</button>
+            <button class="btn-outline-custom" onclick="showView('form')"><i class="fa-solid fa-plus"></i> Nuevo Registro</button>
+            <button class="btn-outline-custom" onclick="clearAllData()" style="margin-left:auto;color:var(--danger);border-color:var(--danger)" title="Limpiar todos los datos"><i class="fa-solid fa-trash-can"></i> Limpiar todo</button>
+          </div>
+          <div class="filter-bar">
+            <select class="form-select" id="filter-estado" onchange="applyFilters()">
+              <option value="">Estado: Todos</option>
+              <option>Abierto</option><option>En proceso</option><option>Escalado</option>
+              <option>Pendiente proveedor</option><option>Solucionado</option><option>Cerrado</option>
+            </select>
+            <select class="form-select" id="filter-falla" onchange="applyFilters()">
+              <option value="">Falla: Todas</option>
+              <option>Red LAN</option><option>WIFI</option><option>MPLS</option><option>SD-WAN</option>
+              <option>Firewall</option><option>Internet</option><option>VPN</option><option>Servidor</option>
+              <option>Aplicación</option><option>Hardware</option><option>Energía</option><option>Telefonía</option>
+              <option>Seguridad</option><option>Otro</option>
+            </select>
+            <input type="text" class="form-control" id="filter-proveedor" placeholder="Filtrar proveedor..." oninput="applyFilters()" style="max-width:180px">
+            <input type="month" class="form-control" id="filter-mes" onchange="applyFilters()" style="max-width:160px">
+            <button class="btn-outline-custom" onclick="clearFilters()" style="padding:8px 14px"><i class="fa-solid fa-xmark"></i> Limpiar</button>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-body-custom">
+          <div class="table-container">
+            <table id="incidents-table" class="table dataTable" style="width:100%">
+              <thead>
+                <tr>
+                  <th>#</th><th>Fecha</th><th>Tipo Evento</th><th>Tipo Falla</th>
+                  <th>Proveedor</th><th>Caso Prov.</th><th>Caso Aranda</th>
+                  <th>Estado</th><th>Diagnóstico</th><th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="table-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- TOAST CONTAINER -->
+<div class="toast-container" id="toast-container"></div>
+
+<!-- MODAL DETAIL -->
+<div class="modal fade" id="detailModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg)">
+      <div class="modal-header" style="border-bottom:1px solid var(--border)">
+        <h5 class="modal-title" style="font-weight:700;font-size:16px">Detalle del Incidente</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="modal-detail-body" style="padding:24px"></div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.8/js/dataTables.bootstrap5.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+
+<script>
+// ===== STATE =====
+let records = [];
+let attachedFiles = [];
+let dtInstance = null;
+let charts = {};
+let editingId = null;
+
+// ===== STORAGE =====
+function saveToStorage(){
+  try{localStorage.setItem('ti_records',JSON.stringify(records));}
+  catch(e){console.error('Error guardando:',e);}
+}
+function loadFromStorage(){
+  try{
+    const d=localStorage.getItem('ti_records');
+    records=d?JSON.parse(d):[];
+    if(!Array.isArray(records))records=[];
+  }catch(e){records=[];}
+}
+
+// ===== INIT =====
+document.addEventListener('DOMContentLoaded',()=>{
+  loadFromStorage();
+  setCurrentDateTime();
+  updateTopbarDate();
+  $(document).ready(function(){
+    initDataTable();
+    refreshAll();
+  });
+  initDragDrop();
+  setInterval(updateTopbarDate,60000);
+});
+
+function setCurrentDateTime(){
+  const now=new Date();
+  const pad=n=>String(n).padStart(2,'0');
+  const str=`${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  document.getElementById('f-fecha').value=str;
+}
+
+function updateTopbarDate(){
+  const d=new Date();
+  const opts={weekday:'long',year:'numeric',month:'long',day:'numeric'};
+  document.getElementById('topbar-date').textContent=d.toLocaleDateString('es-CO',opts);
+}
+
+// ===== VIEWS =====
+function showView(view){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('view-'+view).classList.add('active');
+  document.getElementById('nav-'+view).classList.add('active');
+  if(view==='records'){refreshTable();}
+  if(view==='dashboard'){refreshCharts();}
+}
+
+// ===== THEME =====
+function toggleTheme(){
+  const html=document.documentElement;
+  const isDark=html.getAttribute('data-theme')==='dark';
+  html.setAttribute('data-theme',isDark?'light':'dark');
+  document.getElementById('theme-icon').className=isDark?'fa-solid fa-moon':'fa-solid fa-sun';
+  localStorage.setItem('ti_theme',isDark?'light':'dark');
+  setTimeout(refreshCharts,300);
+}
+(()=>{
+  const t=localStorage.getItem('ti_theme');
+  if(t){document.documentElement.setAttribute('data-theme',t);
+  document.getElementById('theme-icon').className=t==='dark'?'fa-solid fa-sun':'fa-solid fa-moon';}
+})();
+
+// ===== FORM =====
+function saveRecord(){
+  const fecha=document.getElementById('f-fecha').value;
+  const tipoEvento=document.getElementById('f-tipo-evento').value;
+  const tipoFalla=document.getElementById('f-tipo-falla').value;
+  const diagnostico=document.getElementById('f-diagnostico').value.trim();
+  const gestion=document.getElementById('f-gestion').value.trim();
+  const estado=document.getElementById('f-estado').value;
+  if(!fecha||!tipoEvento||!tipoFalla||!diagnostico||!gestion||!estado){
+    toast('Por favor complete todos los campos obligatorios (*)','error');return;
+  }
+  const record={
+    id:editingId||Date.now(),
+    fecha,tipoEvento,tipoFalla,diagnostico,
+    proveedor:document.getElementById('f-proveedor').value.trim(),
+    casoProveedor:document.getElementById('f-caso-proveedor').value.trim(),
+    casoAranda:document.getElementById('f-caso-aranda').value.trim(),
+    gestion,estado,
+    archivos:attachedFiles.map(f=>({name:f.name,size:f.size,type:f.type})),
+    createdAt:editingId?records.find(r=>r.id===editingId)?.createdAt:new Date().toISOString()
+  };
+  if(editingId){
+    const idx=records.findIndex(r=>r.id===editingId);
+    records[idx]=record;
+    editingId=null;
+    toast('Registro actualizado correctamente','info');
+  } else {
+    records.push(record);
+    toast('Registro guardado exitosamente','success');
+  }
+  saveToStorage();
+  clearForm();
+  showView('records');
+  refreshAll();
+}
+
+function clearForm(){
+  ['f-tipo-evento','f-tipo-falla','f-diagnostico','f-proveedor','f-caso-proveedor',
+   'f-caso-aranda','f-gestion','f-estado'].forEach(id=>{
+    const el=document.getElementById(id);
+    el.tagName==='SELECT'?el.value='':el.value='';
+  });
+  setCurrentDateTime();
+  attachedFiles=[];
+  document.getElementById('file-preview').innerHTML='';
+  editingId=null;
+}
+
+// ===== FILE HANDLING =====
+function handleFiles(files){
+  Array.from(files).forEach(f=>{
+    if(f.size>10*1024*1024){toast(`${f.name} supera 10MB`,'error');return;}
+    attachedFiles.push(f);
+    renderFilePreview(f,attachedFiles.length-1);
+  });
+}
+
+function renderFilePreview(file,idx){
+  const grid=document.getElementById('file-preview');
+  const item=document.createElement('div');
+  item.className='file-preview-item';item.id=`fp-${idx}`;
+  if(file.type.startsWith('image/')){
+    const reader=new FileReader();
+    reader.onload=e=>{
+      item.innerHTML=`<img src="${e.target.result}" alt="${file.name}">
+        <button class="remove-file" onclick="removeFile(${idx})"><i class="fa-solid fa-xmark"></i></button>`;
+    };reader.readAsDataURL(file);
+  } else {
+    const icon=file.type.includes('pdf')?'fa-file-pdf':file.type.includes('word')||file.name.endsWith('.docx')?'fa-file-word':'fa-file';
+    const color=file.type.includes('pdf')?'#e53e3e':file.type.includes('word')||file.name.endsWith('.docx')?'#2b6cb0':'#718096';
+    item.innerHTML=`<div style="padding:12px;text-align:center"><i class="fa-solid ${icon}" style="font-size:28px;color:${color}"></i></div>
+      <div class="file-info"><div class="file-name">${file.name}</div><div class="file-size">${(file.size/1024).toFixed(1)} KB</div></div>
+      <button class="remove-file" onclick="removeFile(${idx})"><i class="fa-solid fa-xmark"></i></button>`;
+  }
+  grid.appendChild(item);
+}
+
+function removeFile(idx){
+  attachedFiles.splice(idx,1);
+  document.getElementById('file-preview').innerHTML='';
+  attachedFiles.forEach((f,i)=>renderFilePreview(f,i));
+}
+
+function initDragDrop(){
+  const zone=document.getElementById('file-drop-zone');
+  zone.addEventListener('dragover',e=>{e.preventDefault();zone.classList.add('drag-over');});
+  zone.addEventListener('dragleave',()=>zone.classList.remove('drag-over'));
+  zone.addEventListener('drop',e=>{e.preventDefault();zone.classList.remove('drag-over');handleFiles(e.dataTransfer.files);});
+}
+
+// ===== DATATABLE =====
+function initDataTable(){
+  if(dtInstance)return; // Ya inicializado
+  if(!$.fn.DataTable){setTimeout(initDataTable,200);return;}
+  dtInstance=$('#incidents-table').DataTable({
+    data:[],columns:[
+      {data:'index'},{data:'fecha'},{data:'tipoEvento'},{data:'tipoFalla'},
+      {data:'proveedor'},{data:'casoProveedor'},{data:'casoAranda'},
+      {data:'estadoBadge',orderable:false},{data:'diagnosticoShort',orderable:false},{data:'acciones',orderable:false}
+    ],
+    language:{url:'//cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json'},
+    order:[[1,'desc']],pageLength:15,responsive:true,
+    drawCallback:function(){applyBadgeColors();}
+  });
+}
+
+function refreshTable(){
+  if(!dtInstance){
+    initDataTable();
+  }
+  const fe=document.getElementById('filter-estado').value;
+  const ff=document.getElementById('filter-falla').value;
+  const fp=document.getElementById('filter-proveedor').value.toLowerCase();
+  const fm=document.getElementById('filter-mes').value;
+  const filtered=records.filter(r=>{
+    if(fe&&r.estado!==fe)return false;
+    if(ff&&r.tipoFalla!==ff)return false;
+    if(fp&&!r.proveedor.toLowerCase().includes(fp))return false;
+    if(fm&&!r.fecha.startsWith(fm))return false;
+    return true;
+  });
+  dtInstance.clear();
+  filtered.forEach((r,i)=>{
+    dtInstance.row.add({
+      index:i+1,
+      fecha:formatDateTime(r.fecha),
+      tipoEvento:r.tipoEvento,
+      tipoFalla:r.tipoFalla,
+      proveedor:r.proveedor||'—',
+      casoProveedor:r.casoProveedor||'—',
+      casoAranda:r.casoAranda||'—',
+      estadoBadge:`<span class="badge-status" style="${badgeStyle(r.estado)}">${r.estado}</span>`,
+      diagnosticoShort:r.diagnostico.length>60?r.diagnostico.substring(0,60)+'...':r.diagnostico,
+      acciones:`<div style="display:flex;gap:6px">
+        <button class="btn-outline-custom" style="padding:4px 10px;font-size:12px" onclick="viewDetail('${r.id}')"><i class="fa-solid fa-eye"></i></button>
+        <button class="btn-outline-custom" style="padding:4px 10px;font-size:12px" onclick="editRecord('${r.id}')"><i class="fa-solid fa-pen"></i></button>
+        <button class="btn-danger-custom" style="padding:4px 10px;font-size:12px" onclick="deleteRecord('${r.id}')"><i class="fa-solid fa-trash"></i></button>
+      </div>`
+    });
+  });
+  dtInstance.draw();
+}
+
+function applyFilters(){refreshTable();}
+function clearFilters(){
+  document.getElementById('filter-estado').value='';
+  document.getElementById('filter-falla').value='';
+  document.getElementById('filter-proveedor').value='';
+  document.getElementById('filter-mes').value='';
+  refreshTable();
+}
+
+function badgeStyle(estado){
+  const map={
+    'Abierto':'background:#fff0f3;color:#ff3b5c',
+    'En proceso':'background:#e8efff;color:#0057ff',
+    'Escalado':'background:#f0e6ff;color:#7c3aed',
+    'Pendiente proveedor':'background:#fff7e6;color:#ff9500',
+    'Solucionado':'background:#e6faf7;color:#00c9a7',
+    'Cerrado':'background:#f3f4f6;color:#6b7280'
+  };
+  return map[estado]||'background:#f3f4f6;color:#6b7280';
+}
+function applyBadgeColors(){}
+
+function clearAllData(){
+  if(!confirm('¿Eliminar TODOS los registros? Esta acción no se puede deshacer.'))return;
+  records=[];
+  localStorage.removeItem('ti_records');
+  refreshAll();
+  toast('Todos los registros eliminados','info');
+}
+
+// ===== RECORD ACTIONS =====
+function deleteRecord(id){
+  if(!confirm('¿Eliminar este registro?'))return;
+  records=records.filter(r=>String(r.id)!==String(id));
+  saveToStorage();refreshAll();toast('Registro eliminado','info');
+}
+
+function editRecord(id){
+  const r=records.find(r=>String(r.id)===String(id));
+  if(!r)return;
+  editingId=r.id;
+  document.getElementById('f-fecha').value=r.fecha;
+  document.getElementById('f-tipo-evento').value=r.tipoEvento;
+  document.getElementById('f-tipo-falla').value=r.tipoFalla;
+  document.getElementById('f-diagnostico').value=r.diagnostico;
+  document.getElementById('f-proveedor').value=r.proveedor;
+  document.getElementById('f-caso-proveedor').value=r.casoProveedor;
+  document.getElementById('f-caso-aranda').value=r.casoAranda;
+  document.getElementById('f-gestion').value=r.gestion;
+  document.getElementById('f-estado').value=r.estado;
+  showView('form');
+  toast('Editando registro existente','info');
+}
+
+function viewDetail(id){
+  const r=records.find(r=>String(r.id)===String(id));
+  if(!r)return;
+  document.getElementById('modal-detail-body').innerHTML=`
+    <div class="row g-3">
+      <div class="col-6"><div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text-muted);margin-bottom:4px">Fecha</div><div>${formatDateTime(r.fecha)}</div></div>
+      <div class="col-6"><div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text-muted);margin-bottom:4px">Estado</div><span class="badge-status" style="${badgeStyle(r.estado)}">${r.estado}</span></div>
+      <div class="col-6"><div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text-muted);margin-bottom:4px">Tipo de Evento</div><div>${r.tipoEvento}</div></div>
+      <div class="col-6"><div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text-muted);margin-bottom:4px">Tipo de Falla</div><div>${r.tipoFalla}</div></div>
+      <div class="col-6"><div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text-muted);margin-bottom:4px">Proveedor</div><div>${r.proveedor||'—'}</div></div>
+      <div class="col-6"><div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text-muted);margin-bottom:4px">Caso Proveedor</div><div>${r.casoProveedor||'—'}</div></div>
+      <div class="col-12"><div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text-muted);margin-bottom:4px">Caso Aranda</div><div>${r.casoAranda||'—'}</div></div>
+      <div class="col-12"><div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text-muted);margin-bottom:4px">Diagnóstico</div><div style="background:var(--surface2);padding:12px;border-radius:8px;font-size:13px;line-height:1.6">${r.diagnostico}</div></div>
+      <div class="col-12"><div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text-muted);margin-bottom:4px">Gestión Realizada</div><div style="background:var(--surface2);padding:12px;border-radius:8px;font-size:13px;line-height:1.6">${r.gestion}</div></div>
+      ${r.archivos&&r.archivos.length?`<div class="col-12"><div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px">Archivos Adjuntos (${r.archivos.length})</div><div style="display:flex;flex-wrap:wrap;gap:8px">${r.archivos.map(f=>`<span style="background:var(--surface2);padding:4px 10px;border-radius:6px;font-size:12px;font-family:'DM Mono',monospace"><i class="fa-solid fa-paperclip" style="margin-right:4px"></i>${f.name}</span>`).join('')}</div></div>`:''}
+    </div>`;
+  new bootstrap.Modal(document.getElementById('detailModal')).show();
+}
+
+// ===== CHARTS =====
+const CHART_COLORS=['#0057ff','#00c9a7','#ff3b5c','#ff9500','#7c3aed','#e65100','#0891b2','#059669','#dc2626','#9333ea','#f59e0b','#10b981'];
+
+function getChartDefaults(){
+  const dark=document.documentElement.getAttribute('data-theme')==='dark';
+  return{
+    gridColor:dark?'rgba(255,255,255,.06)':'rgba(0,0,0,.06)',
+    textColor:dark?'#8892a4':'#6b7280',
+    bgColor:dark?'#141929':'#ffffff'
+  };
+}
+
+function initCharts(){
+  const d=getChartDefaults();
+  const baseOpts={responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:d.textColor,font:{family:'DM Sans',size:12}}}}};
+
+  // Fallas Chart
+  if(charts.fallas)charts.fallas.destroy();
+  charts.fallas=new Chart(document.getElementById('chartFallas'),{
+    type:'bar',data:{labels:[],datasets:[{label:'Incidentes',data:[],backgroundColor:CHART_COLORS,borderRadius:6,borderWidth:0}]},
+    options:{...baseOpts,scales:{y:{grid:{color:d.gridColor},ticks:{color:d.textColor}},x:{grid:{display:false},ticks:{color:d.textColor}}},plugins:{...baseOpts.plugins,legend:{display:false}}}
+  });
+  // Estado Chart
+  if(charts.estado)charts.estado.destroy();
+  charts.estado=new Chart(document.getElementById('chartEstado'),{
+    type:'doughnut',data:{labels:[],datasets:[{data:[],backgroundColor:CHART_COLORS,borderWidth:0,hoverOffset:6}]},
+    options:{...baseOpts,cutout:'65%'}
+  });
+  // Tendencia
+  if(charts.tendencia)charts.tendencia.destroy();
+  charts.tendencia=new Chart(document.getElementById('chartTendencia'),{
+    type:'line',data:{labels:[],datasets:[{label:'Incidentes',data:[],borderColor:'#0057ff',backgroundColor:'rgba(0,87,255,.1)',borderWidth:2.5,pointRadius:4,pointBackgroundColor:'#0057ff',fill:true,tension:.4}]},
+    options:{...baseOpts,scales:{y:{grid:{color:d.gridColor},ticks:{color:d.textColor}},x:{grid:{display:false},ticks:{color:d.textColor}}}}
+  });
+  // Proveedor
+  if(charts.proveedor)charts.proveedor.destroy();
+  charts.proveedor=new Chart(document.getElementById('chartProveedor'),{
+    type:'bar',data:{labels:[],datasets:[{label:'Casos',data:[],backgroundColor:CHART_COLORS,borderRadius:6,borderWidth:0}]},
+    options:{...baseOpts,indexAxis:'y',scales:{x:{grid:{color:d.gridColor},ticks:{color:d.textColor}},y:{grid:{display:false},ticks:{color:d.textColor}}},plugins:{...baseOpts.plugins,legend:{display:false}}}
+  });
+}
+
+function refreshCharts(){
+  if(!charts.fallas)initCharts();
+  // Fallas
+  const fallaCounts={};
+  records.forEach(r=>{fallaCounts[r.tipoFalla]=(fallaCounts[r.tipoFalla]||0)+1;});
+  const fallaLabels=Object.keys(fallaCounts),fallaData=Object.values(fallaCounts);
+  charts.fallas.data.labels=fallaLabels;
+  charts.fallas.data.datasets[0].data=fallaData;
+  charts.fallas.update();
+  // Estado
+  const estadoCounts={};
+  records.forEach(r=>{estadoCounts[r.estado]=(estadoCounts[r.estado]||0)+1;});
+  charts.estado.data.labels=Object.keys(estadoCounts);
+  charts.estado.data.datasets[0].data=Object.values(estadoCounts);
+  charts.estado.update();
+  // Tendencia
+  const monthCounts={};
+  records.forEach(r=>{const m=r.fecha.substring(0,7);monthCounts[m]=(monthCounts[m]||0)+1;});
+  const months=Object.keys(monthCounts).sort();
+  charts.tendencia.data.labels=months.map(m=>{const[y,mo]=m.split('-');return new Date(y,mo-1).toLocaleDateString('es',{month:'short',year:'numeric'});});
+  charts.tendencia.data.datasets[0].data=months.map(m=>monthCounts[m]);
+  charts.tendencia.update();
+  // Proveedor
+  const provCounts={};
+  records.forEach(r=>{if(r.proveedor){provCounts[r.proveedor]=(provCounts[r.proveedor]||0)+1;}});
+  const sorted=Object.entries(provCounts).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  charts.proveedor.data.labels=sorted.map(e=>e[0]);
+  charts.proveedor.data.datasets[0].data=sorted.map(e=>e[1]);
+  charts.proveedor.update();
+  // KPIs
+  updateKPIs();
+}
+
+function updateKPIs(){
+  const total=records.length;
+  const open=records.filter(r=>['Abierto','En proceso','Escalado','Pendiente proveedor'].includes(r.estado)).length;
+  const closed=records.filter(r=>['Solucionado','Cerrado'].includes(r.estado)).length;
+  const escalated=records.filter(r=>r.estado==='Escalado').length;
+  const providers=new Set(records.filter(r=>r.proveedor).map(r=>r.proveedor)).size;
+  document.getElementById('kpi-total').textContent=total;
+  document.getElementById('kpi-open').textContent=open;
+  document.getElementById('kpi-closed').textContent=closed;
+  document.getElementById('kpi-escalated').textContent=escalated;
+  document.getElementById('kpi-providers').textContent=providers;
+  document.getElementById('total-counter').textContent=total;
+  document.getElementById('open-counter').textContent=open;
+  // Avg time (days between fecha and now for closed)
+  const closedRecs=records.filter(r=>r.estado==='Cerrado');
+  if(closedRecs.length){
+    const avg=closedRecs.reduce((acc,r)=>{
+      const diff=(new Date()-new Date(r.fecha))/(1000*60*60*24);return acc+diff;
+    },0)/closedRecs.length;
+    document.getElementById('kpi-avg').textContent=avg.toFixed(1)+'d';
+  } else {document.getElementById('kpi-avg').textContent='—';}
+}
+
+function refreshAll(){refreshTable();refreshCharts();}
+
+// ===== EXPORT =====
+function exportExcel(){
+  if(!records.length){toast('No hay registros para exportar','error');return;}
+  const data=records.map((r,i)=>({
+    '#':i+1,'Fecha':formatDateTime(r.fecha),'Tipo Evento':r.tipoEvento,
+    'Tipo Falla':r.tipoFalla,'Diagnóstico':r.diagnostico,'Proveedor':r.proveedor,
+    'Caso Proveedor':r.casoProveedor,'Caso Aranda':r.casoAranda,
+    'Gestión':r.gestion,'Estado':r.estado
+  }));
+  const ws=XLSX.utils.json_to_sheet(data);
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Incidentes');
+  XLSX.writeFile(wb,`TechOps_Incidentes_${new Date().toISOString().substring(0,10)}.xlsx`);
+  toast('Excel exportado correctamente','success');
+}
+
+function exportCSV(){
+  if(!records.length){toast('No hay registros para exportar','error');return;}
+  const headers=['#','Fecha','Tipo Evento','Tipo Falla','Diagnóstico','Proveedor','Caso Proveedor','Caso Aranda','Gestión','Estado'];
+  const rows=records.map((r,i)=>[i+1,formatDateTime(r.fecha),r.tipoEvento,r.tipoFalla,`"${r.diagnostico.replace(/"/g,'""')}"`,r.proveedor,r.casoProveedor,r.casoAranda,`"${r.gestion.replace(/"/g,'""')}"`,r.estado]);
+  const csv=[headers,...rows].map(r=>r.join(',')).join('\n');
+  const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download=`TechOps_Incidentes_${new Date().toISOString().substring(0,10)}.csv`;a.click();
+  toast('CSV exportado correctamente','success');
+}
+
+// ===== TOAST =====
+function toast(msg,type='info'){
+  const c=document.getElementById('toast-container');
+  const t=document.createElement('div');
+  t.className=`toast-item ${type}`;
+  const icons={success:'fa-circle-check',error:'fa-circle-xmark',info:'fa-circle-info'};
+  const colors={success:'var(--accent2)',error:'var(--danger)',info:'var(--accent)'};
+  t.innerHTML=`<i class="fa-solid ${icons[type]}" style="color:${colors[type]};font-size:16px"></i><span>${msg}</span>`;
+  c.appendChild(t);
+  setTimeout(()=>{t.style.opacity='0';t.style.transition='opacity .3s';setTimeout(()=>t.remove(),300);},3500);
+}
+
+// ===== HELPERS =====
+function formatDateTime(dt){
+  if(!dt)return '—';
+  try{
+    const d=new Date(dt);
+    return d.toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric'})+' '+d.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
+  }catch{return dt;}
+}
+
+
+</script>
+</body>
+</html>
